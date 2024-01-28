@@ -1,0 +1,103 @@
+package controllers
+
+import (
+	"errors"
+	"fmt"
+	"net/http"
+
+	"github.com/alfredomagalhaes/authorizator/repository"
+	"github.com/alfredomagalhaes/authorizator/types"
+	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
+)
+
+var ErrNoRecordsFound error = errors.New("no records found")
+
+// GetAllApplications returns all the applications
+// stored in the database
+func GetAllApplications(r repository.Repository) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+
+		appList, err := r.GetApplications(true)
+
+		if err != nil {
+			c.Status(http.StatusNotFound).JSON(ErrorResponse(err))
+		}
+
+		if len(appList) == 0 {
+			return c.Status(http.StatusNotFound).JSON(ErrorResponse(ErrNoRecordsFound))
+		}
+
+		return c.Status(http.StatusOK).JSON(SuccessResponse(appList))
+	}
+}
+
+// GetApplicationWithID search for an application
+// based on the id from the request
+func GetApplicationWithID(r repository.Repository) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		id := c.Params("id", "")
+
+		if id == "" {
+			c.Status(http.StatusBadRequest).JSON(ErrorResponse(errors.New("id not informed")))
+		}
+		parsedID, err := uuid.Parse(id)
+
+		if err != nil {
+			return c.Status(http.StatusBadRequest).JSON(ErrorResponse(errors.New("malformed id, check the request")))
+		}
+		app, err := r.GetApplication(parsedID)
+
+		if err != nil {
+			return c.Status(http.StatusNotFound).JSON(ErrorResponse(ErrNoRecordsFound))
+		}
+
+		return c.Status(http.StatusOK).JSON(SuccessResponse(app))
+
+	}
+}
+
+// SaveApplication creates a new application in database
+func SaveApplication(r repository.Repository) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		var request types.Application
+
+		err := c.BodyParser(&request)
+
+		if err != nil {
+			return c.Status(http.StatusBadRequest).JSON(ErrorResponse(errors.New("malformed body, check the request")))
+		}
+
+		insertedID, err := r.SaveApplication(request)
+		if err != nil {
+			return c.Status(http.StatusInternalServerError).JSON(ErrorResponse(err))
+		}
+		locationUrl := buildLocationString(c, insertedID.String())
+		c.Response().Header.Add("location", locationUrl)
+		return c.Status(http.StatusCreated).JSON(SuccessResponse(insertedID))
+	}
+}
+
+// ErrorResponse creates a default error response
+// struct, to be used in all api's
+func ErrorResponse(err error) *fiber.Map {
+	return &fiber.Map{
+		"success": false,
+		"error":   err.Error(),
+	}
+}
+
+// SuccessResponse creates a default success response
+// struct, to be used in all api's
+func SuccessResponse(v any) *fiber.Map {
+	return &fiber.Map{
+		"success": true,
+		"data":    v,
+	}
+}
+
+func buildLocationString(c *fiber.Ctx, id string) string {
+	var path string = fmt.Sprintf("%s/%s", string(c.Request().URI().Path()), id)
+
+	return path
+}

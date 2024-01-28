@@ -4,14 +4,18 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/alfredomagalhaes/authorizator/repository"
+	"github.com/alfredomagalhaes/authorizator/routes"
 	"github.com/gofiber/contrib/fiberzerolog"
 	"github.com/gofiber/fiber/v2"
+	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 )
@@ -31,6 +35,27 @@ var initApiServerCmd = &cobra.Command{
 		app.Use(fiberzerolog.New(fiberzerolog.Config{
 			Logger: &logger,
 		}))
+
+		log.SetOutput(logger)
+
+		ctx := context.Background()
+
+		mConnConfig := repository.MongoRepositoryConnConfig{
+			Username:     os.Getenv("MONGO_USER"),
+			Password:     os.Getenv("MONGO_PASS"),
+			Host:         os.Getenv("MONGO_HOST"),
+			Port:         os.Getenv("MONGO_PORT"),
+			DatabaseName: os.Getenv("MONGO_DATABASE_NAME"),
+		}
+
+		appRepo := repository.NewMongoRepository(mConnConfig, ctx, &logger)
+
+		defer appRepo.CloseConn(ctx)
+
+		appRepo.CreateIndexes()
+
+		//Initialize all the routes
+		initRoutes(app, appRepo)
 
 		// Listen from a different goroutine
 		go func() {
@@ -58,6 +83,10 @@ var initApiServerCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(initApiServerCmd)
 
+	if err := godotenv.Load(".env"); err != nil {
+		log.Fatal("No .env file found")
+	}
+
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
@@ -67,4 +96,13 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// initApiServerCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+}
+
+func initRoutes(app *fiber.App, r repository.Repository) {
+
+	//Creates the sub route for the api version
+	apiV1 := app.Group("/api/v1")
+
+	//Initialize "applications" routes
+	routes.ApplicationRoute(apiV1, r)
 }
