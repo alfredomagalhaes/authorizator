@@ -22,3 +22,9 @@ go.work
 
 #bin folder
 bin
+
+#env files
+.env
+
+#VS Code config folder
+.vscode
