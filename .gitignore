@@ -28,3 +28,6 @@ bin
 
 #VS Code config folder
 .vscode
+
+#Secrets folder
+secrets
