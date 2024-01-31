@@ -2,6 +2,7 @@ package repository
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/alfredomagalhaes/authorizator/types"
 	"github.com/google/uuid"
@@ -29,25 +30,36 @@ type PgRepositoryConnConfig struct {
 }
 
 func NewPgRepository(pgf PgRepositoryConnConfig, log *zerolog.Logger) (*PgRepository, error) {
-	var pgDNS string = fmt.Sprintf(`host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=%s`,
-		pgf.Host,
+	//postgres://%s:%s@%s:%s/%s?sslmode=disable
+	//var pgDNS string = fmt.Sprintf(`host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=%s`,
+	var pgDNS string = fmt.Sprintf(`postgres://%s:%s@%s:%s/%s?sslmode=disable`,
 		pgf.Username,
 		pgf.Password,
-		pgf.DatabaseName,
+		pgf.Host,
 		pgf.Port,
-		pgf.TimeZone)
-	var repo *PgRepository
-	var err error
+		pgf.DatabaseName)
 
-	repo.DB, err = gorm.Open(postgres.Open(pgDNS), &gorm.Config{})
+	var repo PgRepository
+	//var err error
+
+	//TODO: Implement interface to use zerolog in gorm package
+	db, err := gorm.Open(postgres.Open(pgDNS), &gorm.Config{})
 
 	if err != nil {
 		log.Error().Err(err).Msg("error while trying to connect to postgres database")
 		return nil, err
 	}
 
-	return repo, nil
+	repo.DB = db
+	repo.log = log
 
+	return &repo, nil
+
+}
+
+// MigrateTable create all the tables in the database
+func (pgr PgRepository) MigrateTables() {
+	pgr.DB.Migrator().AutoMigrate(types.Application{})
 }
 
 // GetApplications get all valid applications from the database
@@ -73,11 +85,28 @@ func (pgr *PgRepository) GetApplicationFromCache(id uuid.UUID) (types.Applicatio
 
 // SaveApplication save a new application in the database
 func (pgr *PgRepository) SaveApplication(app types.Application) (uuid.UUID, error) {
-	return uuid.New(), nil
+
+	result := pgr.DB.Create(&app)
+
+	if result.Error != nil {
+		pgr.log.Error().Err(result.Error).Msg("failed to insert new item in the database")
+		if checkIfIsDuplicated(result.Error.Error()) {
+			return uuid.Nil, ErrAppDuplicated
+		}
+		return uuid.Nil, ErrDefaultInsertApp
+	}
+
+	return app.ID, nil
 }
 
 // UpdateApplication updates attributes from an existing application in the database
 // returns an error if its not possible to save data in the database
 func (pgr *PgRepository) UpdateApplication(app types.Application) error {
 	return nil
+}
+
+// Check if there is the string "duplicated"
+// on error string
+func checkIfIsDuplicated(errStr string) bool {
+	return strings.Contains(errStr, "duplicate")
 }

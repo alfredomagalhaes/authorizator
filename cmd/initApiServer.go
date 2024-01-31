@@ -4,7 +4,6 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"os"
@@ -38,24 +37,26 @@ var initApiServerCmd = &cobra.Command{
 
 		log.SetOutput(logger)
 
-		ctx := context.Background()
-
-		mConnConfig := repository.MongoRepositoryConnConfig{
-			Username:     os.Getenv("MONGO_USER"),
-			Password:     os.Getenv("MONGO_PASS"),
-			Host:         os.Getenv("MONGO_HOST"),
-			Port:         os.Getenv("MONGO_PORT"),
-			DatabaseName: os.Getenv("MONGO_DATABASE_NAME"),
+		pgConnConfig := repository.PgRepositoryConnConfig{
+			Username:     os.Getenv("DB_USER"),
+			Password:     os.Getenv("DB_PASSWORD"),
+			Host:         os.Getenv("DB_HOST"),
+			Port:         os.Getenv("DB_PORT"),
+			DatabaseName: os.Getenv("DB_NAME"),
+			TimeZone:     os.Getenv("DB_TIMEZONE"),
 		}
 
-		appRepo := repository.NewMongoRepository(mConnConfig, ctx, &logger)
+		pgRepo, err := repository.NewPgRepository(pgConnConfig, &logger)
 
-		defer appRepo.CloseConn(ctx)
+		if err != nil {
+			log.Fatalf("could not connect to database %v", err)
+		}
 
-		appRepo.CreateIndexes()
+		//Create all the tables in the database
+		pgRepo.MigrateTables()
 
 		//Initialize all the routes
-		initRoutes(app, appRepo)
+		initRoutes(app, pgRepo)
 
 		// Listen from a different goroutine
 		go func() {
