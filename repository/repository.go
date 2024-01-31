@@ -10,6 +10,7 @@ import (
 var ErrNoRecordsFound = errors.New("no records found with given parameters")
 var ErrAppDuplicated = errors.New("application already exists, try another `external_id")
 var ErrDefaultInsertApp = errors.New("error while trying to create an application, try again later")
+var ErrIdToUpdateNill = errors.New("id to update can't be nill")
 
 type Repository interface {
 	GetApplications(useCache bool) ([]types.Application, error)

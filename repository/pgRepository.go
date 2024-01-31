@@ -65,7 +65,12 @@ func (pgr PgRepository) MigrateTables() {
 // GetApplications get all valid applications from the database
 // deleted applications are ignored
 func (pgr *PgRepository) GetApplications(useCache bool) ([]types.Application, error) {
-	return nil, nil
+
+	var appsToRet []types.Application
+
+	result := pgr.DB.Find(&appsToRet)
+
+	return appsToRet, result.Error
 }
 
 // GetApplicationsFromCache check if the applications are in cache server
@@ -77,7 +82,12 @@ func (pgr *PgRepository) GetApplicationsFromCache() ([]types.Application, error)
 // GetApplication search for a single application with the given ID,
 // deleted applications should not return
 func (pgr *PgRepository) GetApplication(id uuid.UUID) (types.Application, error) {
-	return types.Application{}, nil
+
+	appToRet := types.Application{}
+
+	result := pgr.DB.Where("id = ?", id).First(&appToRet)
+
+	return appToRet, result.Error
 }
 func (pgr *PgRepository) GetApplicationFromCache(id uuid.UUID) (types.Application, error) {
 	return types.Application{}, nil
@@ -102,7 +112,14 @@ func (pgr *PgRepository) SaveApplication(app types.Application) (uuid.UUID, erro
 // UpdateApplication updates attributes from an existing application in the database
 // returns an error if its not possible to save data in the database
 func (pgr *PgRepository) UpdateApplication(app types.Application) error {
-	return nil
+
+	if app.ID == uuid.Nil {
+		return ErrIdToUpdateNill
+	}
+
+	result := pgr.DB.Save(&app)
+
+	return result.Error
 }
 
 // Check if there is the string "duplicated"

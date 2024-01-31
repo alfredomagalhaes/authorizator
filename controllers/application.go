@@ -70,11 +70,47 @@ func SaveApplication(r repository.Repository) fiber.Handler {
 
 		insertedID, err := r.SaveApplication(request)
 		if err != nil {
-			return c.Status(http.StatusInternalServerError).JSON(ErrorResponse(err))
+			statusCode := http.StatusInternalServerError
+			if err == repository.ErrAppDuplicated {
+				statusCode = http.StatusBadRequest
+			}
+			return c.Status(statusCode).JSON(ErrorResponse(err))
 		}
 		locationUrl := buildLocationString(c, insertedID.String())
 		c.Response().Header.Add("location", locationUrl)
 		return c.Status(http.StatusCreated).JSON(SuccessResponse(insertedID))
+	}
+}
+
+func UpdateApplication(r repository.Repository) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		var request types.Application
+
+		id := c.Params("id", "")
+
+		if id == "" {
+			c.Status(http.StatusBadRequest).JSON(ErrorResponse(errors.New("id not informed")))
+		}
+
+		err := c.BodyParser(&request)
+
+		if err != nil {
+			return c.Status(http.StatusBadRequest).JSON(ErrorResponse(errors.New("malformed body, check the request")))
+		}
+
+		request.ID, err = uuid.Parse(id)
+
+		if err != nil {
+			return c.Status(http.StatusBadRequest).JSON(ErrorResponse(errors.New("malformed id, check the request")))
+		}
+
+		err = r.UpdateApplication(request)
+
+		if err != nil {
+			return c.Status(http.StatusBadRequest).JSON(ErrorResponse(errors.New("failed to perform update")))
+		}
+
+		return c.Status(http.StatusOK).JSON(SuccessResponse("ok"))
 	}
 }
 

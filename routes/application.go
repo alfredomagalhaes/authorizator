@@ -12,5 +12,5 @@ func ApplicationRoute(route fiber.Router, r repository.Repository) {
 	group.Get("/", controllers.GetAllApplications(r))
 	group.Get("/:id", controllers.GetApplicationWithID(r))
 	group.Post("/", controllers.SaveApplication(r))
-
+	group.Put("/:id", controllers.UpdateApplication(r))
 }
