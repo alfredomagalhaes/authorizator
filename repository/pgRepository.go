@@ -6,7 +6,7 @@ import (
 
 	"github.com/alfredomagalhaes/authorizator/types"
 	"github.com/google/uuid"
-	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -15,8 +15,7 @@ import (
 // contains the database config after a
 // successful connection
 type PgRepository struct {
-	DB  *gorm.DB
-	log *zerolog.Logger
+	DB *gorm.DB
 }
 
 // PgRepositoryConnConfig struct to config the connection to postgres
@@ -29,9 +28,8 @@ type PgRepositoryConnConfig struct {
 	TimeZone     string
 }
 
-func NewPgRepository(pgf PgRepositoryConnConfig, log *zerolog.Logger) (*PgRepository, error) {
-	//postgres://%s:%s@%s:%s/%s?sslmode=disable
-	//var pgDNS string = fmt.Sprintf(`host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=%s`,
+func NewPgRepository(pgf PgRepositoryConnConfig) (*PgRepository, error) {
+
 	var pgDNS string = fmt.Sprintf(`postgres://%s:%s@%s:%s/%s?sslmode=disable`,
 		pgf.Username,
 		pgf.Password,
@@ -51,7 +49,6 @@ func NewPgRepository(pgf PgRepositoryConnConfig, log *zerolog.Logger) (*PgReposi
 	}
 
 	repo.DB = db
-	repo.log = log
 
 	return &repo, nil
 
@@ -59,7 +56,12 @@ func NewPgRepository(pgf PgRepositoryConnConfig, log *zerolog.Logger) (*PgReposi
 
 // MigrateTable create all the tables in the database
 func (pgr PgRepository) MigrateTables() {
+	//pgr.DB.Migrator().AutoMigrate(types.Application{})
+	//pgr.DB.Migrator().AutoMigrate(types.Role{})
+	//pgr.DB.AutoMigrate(types.Application{})
 	pgr.DB.Migrator().AutoMigrate(types.Application{})
+	pgr.DB.Migrator().AutoMigrate(types.Role{})
+
 }
 
 // GetApplications get all valid applications from the database
@@ -99,7 +101,7 @@ func (pgr *PgRepository) SaveApplication(app types.Application) (uuid.UUID, erro
 	result := pgr.DB.Create(&app)
 
 	if result.Error != nil {
-		pgr.log.Error().Err(result.Error).Msg("failed to insert new item in the database")
+		log.Error().Err(result.Error).Msg("failed to insert new item in the database")
 		if checkIfIsDuplicated(result.Error.Error()) {
 			return uuid.Nil, ErrAppDuplicated
 		}
@@ -126,4 +128,28 @@ func (pgr *PgRepository) UpdateApplication(app types.Application) error {
 // on error string
 func checkIfIsDuplicated(errStr string) bool {
 	return strings.Contains(errStr, "duplicate")
+}
+
+// SaveApplication save a new application in the database
+func (pgr *PgRepository) SaveRole(r types.Role) (uuid.UUID, error) {
+
+	result := pgr.DB.Create(&r)
+
+	if result.Error != nil {
+		log.Error().Err(result.Error).Msg("failed to insert new item in the database")
+		if checkIfIsDuplicated(result.Error.Error()) {
+			return uuid.Nil, ErrRoleDuplicated
+		}
+		return uuid.Nil, ErrDefaultInsertRole
+	}
+
+	return r.ID, nil
+}
+
+func (pgr *PgRepository) GetRole(id uuid.UUID) (types.Role, error) {
+	role := types.Role{}
+
+	result := pgr.DB.Where("id = ?", id).First(&role)
+
+	return role, result.Error
 }

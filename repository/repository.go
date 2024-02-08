@@ -8,8 +8,10 @@ import (
 )
 
 var ErrNoRecordsFound = errors.New("no records found with given parameters")
-var ErrAppDuplicated = errors.New("application already exists, try another `external_id")
+var ErrAppDuplicated = errors.New("application already exists, try another `external_id`")
+var ErrRoleDuplicated = errors.New("role already exists, try another `name`")
 var ErrDefaultInsertApp = errors.New("error while trying to create an application, try again later")
+var ErrDefaultInsertRole = errors.New("error while trying to create a role, try again later")
 var ErrIdToUpdateNill = errors.New("id to update can't be nill")
 
 type Repository interface {
@@ -19,4 +21,6 @@ type Repository interface {
 	GetApplicationFromCache(id uuid.UUID) (types.Application, error)
 	SaveApplication(app types.Application) (uuid.UUID, error)
 	UpdateApplication(app types.Application) error
+	SaveRole(r types.Role) (uuid.UUID, error)
+	GetRole(uuid.UUID) (types.Role, error)
 }

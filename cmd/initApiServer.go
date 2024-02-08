@@ -46,7 +46,7 @@ var initApiServerCmd = &cobra.Command{
 			TimeZone:     os.Getenv("DB_TIMEZONE"),
 		}
 
-		pgRepo, err := repository.NewPgRepository(pgConnConfig, &logger)
+		pgRepo, err := repository.NewPgRepository(pgConnConfig)
 
 		if err != nil {
 			log.Fatalf("could not connect to database %v", err)
@@ -106,4 +106,5 @@ func initRoutes(app *fiber.App, r repository.Repository) {
 
 	//Initialize "applications" routes
 	routes.ApplicationRoute(apiV1, r)
+	routes.RolesRoute(apiV1, r)
 }
