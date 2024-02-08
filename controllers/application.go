@@ -12,6 +12,7 @@ import (
 )
 
 var ErrNoRecordsFound error = errors.New("no records found")
+var ErrMalformedRequest error = errors.New("malformed body, check the request")
 
 // GetAllApplications returns all the applications
 // stored in the database
@@ -65,7 +66,7 @@ func SaveApplication(r repository.Repository) fiber.Handler {
 		err := c.BodyParser(&request)
 
 		if err != nil {
-			return c.Status(http.StatusBadRequest).JSON(ErrorResponse(errors.New("malformed body, check the request")))
+			return c.Status(http.StatusBadRequest).JSON(ErrorResponse(ErrMalformedRequest))
 		}
 
 		insertedID, err := r.SaveApplication(request)
