@@ -13,7 +13,7 @@ type Base struct {
 	ID        uuid.UUID      `json:"id" gorm:"primary_key"`
 	CreatedAt time.Time      `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt time.Time      `json:"updated_at" gorm:"autoUpdateTime"`
-	DeletedAt gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
+	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
 }
 
 // BeforeCreate will set a UUID rather than numeric ID.
