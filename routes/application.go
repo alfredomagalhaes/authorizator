@@ -6,7 +6,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func ApplicationRoute(route fiber.Router, r repository.Repository) {
+func ApplicationRoute(route fiber.Router, r repository.AppRepository) {
 
 	group := route.Group("application")
 	group.Get("/", controllers.GetAllApplications(r))

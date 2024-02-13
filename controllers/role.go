@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func CreateRole(r repository.Repository) fiber.Handler {
+func CreateRole(r repository.RoleRepository) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 
 		var request types.Role
@@ -34,7 +34,7 @@ func CreateRole(r repository.Repository) fiber.Handler {
 
 }
 
-func GetRole(r repository.Repository) fiber.Handler {
+func GetRole(r repository.RoleRepository) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 
 		id := c.Params("id", "")
@@ -48,7 +48,7 @@ func GetRole(r repository.Repository) fiber.Handler {
 			return c.Status(http.StatusBadRequest).JSON(ErrorResponse(errors.New("malformed id, check the request")))
 		}
 
-		role, err := r.GetRole(parsedID)
+		role, err := r.Get(parsedID)
 
 		if err != nil {
 			return c.Status(http.StatusNotFound).JSON(ErrorResponse(ErrNoRecordsFound))

@@ -15,7 +15,7 @@ import (
 var ErrNotAllowedChar error = errors.New("use only alphanumeric in role name, to separate strings use /, - ou _")
 
 // CreateRole create a new role in the database, and make some validations
-func CreateRole(r repository.Repository, role types.Role) (uuid.UUID, error) {
+func CreateRole(r repository.RoleRepository, role types.Role) (uuid.UUID, error) {
 
 	var allowedChar = []string{"/", "_", "-"}
 	var roleName string
@@ -26,7 +26,7 @@ func CreateRole(r repository.Repository, role types.Role) (uuid.UUID, error) {
 	}
 
 	//Check if application exists
-	app, err := r.GetApplication(role.AppID)
+	app, err := r.GetApp(role.AppID)
 
 	if err != nil {
 		return uuid.Nil, errors.New("")
@@ -49,7 +49,7 @@ func CreateRole(r repository.Repository, role types.Role) (uuid.UUID, error) {
 
 	role.Tag = fmt.Sprintf("%s/%s", app.ExternalID, role.Name)
 
-	roleID, err := r.SaveRole(role)
+	roleID, err := r.Save(role)
 
 	if err != nil {
 		log.Error().Err(err).Msg("failed to create new role in the database")

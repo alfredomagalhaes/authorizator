@@ -16,10 +16,10 @@ var ErrMalformedRequest error = errors.New("malformed body, check the request")
 
 // GetAllApplications returns all the applications
 // stored in the database
-func GetAllApplications(r repository.Repository) fiber.Handler {
+func GetAllApplications(r repository.AppRepository) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 
-		appList, err := r.GetApplications(true)
+		appList, err := r.GetAll(true)
 
 		if err != nil {
 			c.Status(http.StatusNotFound).JSON(ErrorResponse(err))
@@ -35,7 +35,7 @@ func GetAllApplications(r repository.Repository) fiber.Handler {
 
 // GetApplicationWithID search for an application
 // based on the id from the request
-func GetApplicationWithID(r repository.Repository) fiber.Handler {
+func GetApplicationWithID(r repository.AppRepository) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		id := c.Params("id", "")
 
@@ -47,7 +47,7 @@ func GetApplicationWithID(r repository.Repository) fiber.Handler {
 		if err != nil {
 			return c.Status(http.StatusBadRequest).JSON(ErrorResponse(errors.New("malformed id, check the request")))
 		}
-		app, err := r.GetApplication(parsedID)
+		app, err := r.Get(parsedID)
 
 		if err != nil {
 			return c.Status(http.StatusNotFound).JSON(ErrorResponse(ErrNoRecordsFound))
@@ -59,7 +59,7 @@ func GetApplicationWithID(r repository.Repository) fiber.Handler {
 }
 
 // SaveApplication creates a new application in database
-func SaveApplication(r repository.Repository) fiber.Handler {
+func SaveApplication(r repository.AppRepository) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		var request types.Application
 
@@ -69,7 +69,7 @@ func SaveApplication(r repository.Repository) fiber.Handler {
 			return c.Status(http.StatusBadRequest).JSON(ErrorResponse(ErrMalformedRequest))
 		}
 
-		insertedID, err := r.SaveApplication(request)
+		insertedID, err := r.Save(request)
 		if err != nil {
 			statusCode := http.StatusInternalServerError
 			if err == repository.ErrAppDuplicated {
@@ -83,7 +83,7 @@ func SaveApplication(r repository.Repository) fiber.Handler {
 	}
 }
 
-func UpdateApplication(r repository.Repository) fiber.Handler {
+func UpdateApplication(r repository.AppRepository) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		var request types.Application
 
@@ -105,7 +105,7 @@ func UpdateApplication(r repository.Repository) fiber.Handler {
 			return c.Status(http.StatusBadRequest).JSON(ErrorResponse(errors.New("malformed id, check the request")))
 		}
 
-		err = r.UpdateApplication(request)
+		err = r.Update(request)
 
 		if err != nil {
 			return c.Status(http.StatusBadRequest).JSON(ErrorResponse(errors.New("failed to perform update")))

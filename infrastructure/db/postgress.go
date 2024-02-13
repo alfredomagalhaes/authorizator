@@ -1,4 +1,4 @@
-package repository
+package db
 
 import (
 	"fmt"
@@ -8,15 +8,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// PgRepository base struct from a postgres repository
-// contains the database config after a
-// successful connection
-type PgRepository struct {
-	DB *gorm.DB
-}
-
-// PgRepositoryConnConfig struct to config the connection to postgres
-type PgRepositoryConnConfig struct {
+type PgConnConfig struct {
 	Username     string
 	Password     string
 	Host         string
@@ -25,17 +17,15 @@ type PgRepositoryConnConfig struct {
 	TimeZone     string
 }
 
-func NewPgRepository(pgf PgRepositoryConnConfig) (*PgRepository, error) {
-
+// Creates the connection to the database
+// using gorm lib to be used all over the application
+func NewPgConnection(config PgConnConfig) (*gorm.DB, error) {
 	var pgDNS string = fmt.Sprintf(`postgres://%s:%s@%s:%s/%s?sslmode=disable`,
-		pgf.Username,
-		pgf.Password,
-		pgf.Host,
-		pgf.Port,
-		pgf.DatabaseName)
-
-	var repo PgRepository
-	//var err error
+		config.Username,
+		config.Password,
+		config.Host,
+		config.Port,
+		config.DatabaseName)
 
 	//TODO: Implement interface to use zerolog in gorm package
 	db, err := gorm.Open(postgres.Open(pgDNS), &gorm.Config{})
@@ -45,8 +35,5 @@ func NewPgRepository(pgf PgRepositoryConnConfig) (*PgRepository, error) {
 		return nil, err
 	}
 
-	repo.DB = db
-
-	return &repo, nil
-
+	return db, nil
 }

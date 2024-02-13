@@ -24,3 +24,21 @@ type Repository interface {
 	SaveRole(r types.Role) (uuid.UUID, error)
 	GetRole(uuid.UUID) (types.Role, error)
 }
+
+// Interface to control Roles interactions in the database
+type RoleRepository interface {
+	Save(role types.Role) (uuid.UUID, error)
+	Get(uuid.UUID) (types.Role, error)
+	GetApp(uuid.UUID) (types.Application, error)
+}
+
+// Interface to control Applications interactions in the database
+type AppRepository interface {
+	MigrateTable() error
+	GetAll(useCache bool) ([]types.Application, error)
+	GetAllFromCache() ([]types.Application, error)
+	Get(id uuid.UUID) (types.Application, error)
+	GetFromCache(id uuid.UUID) (types.Application, error)
+	Save(app types.Application) (uuid.UUID, error)
+	Update(app types.Application) error
+}

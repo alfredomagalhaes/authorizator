@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/alfredomagalhaes/authorizator/infrastructure/db"
 	"github.com/alfredomagalhaes/authorizator/repository"
 	"github.com/alfredomagalhaes/authorizator/routes"
 	"github.com/gofiber/contrib/fiberzerolog"
@@ -37,7 +38,7 @@ var initApiServerCmd = &cobra.Command{
 
 		log.SetOutput(logger)
 
-		pgConnConfig := repository.PgRepositoryConnConfig{
+		pgConnConfig := db.PgConnConfig{
 			Username:     os.Getenv("DB_USER"),
 			Password:     os.Getenv("DB_PASSWORD"),
 			Host:         os.Getenv("DB_HOST"),
@@ -46,17 +47,25 @@ var initApiServerCmd = &cobra.Command{
 			TimeZone:     os.Getenv("DB_TIMEZONE"),
 		}
 
-		pgRepo, err := repository.NewPgRepository(pgConnConfig)
+		pgDB, err := db.NewPgConnection(pgConnConfig)
 
 		if err != nil {
 			log.Fatalf("could not connect to database %v", err)
 		}
+		//Initialize all repositories
+		appRepo, _ := repository.NewPgAppRepository(pgDB)
+		roleRepo, _ := repository.NewPgRoleRepository(pgDB)
 
 		//Create all the tables in the database
-		pgRepo.MigrateTables()
+		appRepo.MigrateTable()
 
 		//Initialize all the routes
-		initRoutes(app, pgRepo)
+		//Creates the sub route for the api version
+		apiV1 := app.Group("/api/v1")
+
+		//Initialize "applications" routes
+		routes.ApplicationRoute(apiV1, appRepo)
+		routes.RolesRoute(apiV1, roleRepo)
 
 		// Listen from a different goroutine
 		go func() {
@@ -97,14 +106,4 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// initApiServerCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-}
-
-func initRoutes(app *fiber.App, r repository.Repository) {
-
-	//Creates the sub route for the api version
-	apiV1 := app.Group("/api/v1")
-
-	//Initialize "applications" routes
-	routes.ApplicationRoute(apiV1, r)
-	routes.RolesRoute(apiV1, r)
 }
