@@ -13,6 +13,8 @@ import (
 
 var ErrNoRecordsFound error = errors.New("no records found")
 var ErrMalformedRequest error = errors.New("malformed body, check the request")
+var ErrIDNotInformed error = errors.New("id not informed")
+var ErrMalformedID error = errors.New("malformed id, check the request")
 
 // GetAllApplications returns all the applications
 // stored in the database
@@ -37,17 +39,13 @@ func GetAllApplications(r repository.AppRepository) fiber.Handler {
 // based on the id from the request
 func GetApplicationWithID(r repository.AppRepository) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		id := c.Params("id", "")
 
-		if id == "" {
-			c.Status(http.StatusBadRequest).JSON(ErrorResponse(errors.New("id not informed")))
-		}
-		parsedID, err := uuid.Parse(id)
+		id, err := GetIDFromRequest(c)
 
 		if err != nil {
-			return c.Status(http.StatusBadRequest).JSON(ErrorResponse(errors.New("malformed id, check the request")))
+			return c.Status(http.StatusBadRequest).JSON(ErrorResponse(err))
 		}
-		app, err := r.Get(parsedID)
+		app, err := r.Get(id)
 
 		if err != nil {
 			return c.Status(http.StatusNotFound).JSON(ErrorResponse(ErrNoRecordsFound))
@@ -87,23 +85,19 @@ func UpdateApplication(r repository.AppRepository) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		var request types.Application
 
-		id := c.Params("id", "")
-
-		if id == "" {
-			c.Status(http.StatusBadRequest).JSON(ErrorResponse(errors.New("id not informed")))
-		}
-
-		err := c.BodyParser(&request)
+		id, err := GetIDFromRequest(c)
 
 		if err != nil {
-			return c.Status(http.StatusBadRequest).JSON(ErrorResponse(errors.New("malformed body, check the request")))
+			c.Status(http.StatusBadRequest).JSON(ErrorResponse(err))
 		}
 
-		request.ID, err = uuid.Parse(id)
+		err = c.BodyParser(&request)
 
 		if err != nil {
-			return c.Status(http.StatusBadRequest).JSON(ErrorResponse(errors.New("malformed id, check the request")))
+			return c.Status(http.StatusBadRequest).JSON(ErrorResponse(ErrMalformedRequest))
 		}
+
+		request.ID = id
 
 		err = r.Update(request)
 
@@ -137,4 +131,24 @@ func buildLocationString(c *fiber.Ctx, id string) string {
 	var path string = fmt.Sprintf("%s/%s", string(c.Request().URI().Path()), id)
 
 	return path
+}
+
+// Check id from url params and try to convert
+// to an uuid
+func GetIDFromRequest(c *fiber.Ctx) (uuid.UUID, error) {
+	var nilID uuid.UUID = uuid.Nil
+	var parseID uuid.UUID
+	id := c.Params("id")
+
+	if id == "" {
+		return nilID, ErrIDNotInformed
+	}
+
+	parseID, err := uuid.Parse(id)
+
+	if err != nil {
+		return nilID, ErrMalformedID
+	}
+
+	return parseID, nil
 }
