@@ -1,16 +1,15 @@
 package controllers
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/alfredomagalhaes/authorizator/repository"
+	"github.com/alfredomagalhaes/authorizator/services"
 	"github.com/alfredomagalhaes/authorizator/types"
-	"github.com/alfredomagalhaes/authorizator/usecase"
 	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
 )
 
+// Controller to create roles from the rest calls
 func CreateRole(r repository.RoleRepository) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 
@@ -22,7 +21,7 @@ func CreateRole(r repository.RoleRepository) fiber.Handler {
 			return c.Status(http.StatusBadRequest).JSON(ErrorResponse(ErrMalformedRequest))
 		}
 
-		roleId, err := usecase.CreateRole(r, request)
+		roleId, err := services.CreateRole(r, request)
 		if err != nil {
 			return c.Status(http.StatusBadRequest).JSON(ErrorResponse(ErrMalformedRequest))
 		}
@@ -34,21 +33,17 @@ func CreateRole(r repository.RoleRepository) fiber.Handler {
 
 }
 
+// Controller to return a existing role filtered by ID
 func GetRole(r repository.RoleRepository) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 
-		id := c.Params("id", "")
-
-		if id == "" {
-			c.Status(http.StatusBadRequest).JSON(ErrorResponse(errors.New("id not informed")))
-		}
-		parsedID, err := uuid.Parse(id)
+		id, err := GetIDFromRequest(c)
 
 		if err != nil {
-			return c.Status(http.StatusBadRequest).JSON(ErrorResponse(errors.New("malformed id, check the request")))
+			c.Status(http.StatusBadRequest).JSON(ErrorResponse(err))
 		}
 
-		role, err := r.Get(parsedID)
+		role, err := r.Get(id)
 
 		if err != nil {
 			return c.Status(http.StatusNotFound).JSON(ErrorResponse(ErrNoRecordsFound))

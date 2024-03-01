@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/alfredomagalhaes/authorizator/repository"
+	"github.com/alfredomagalhaes/authorizator/services"
 	"github.com/alfredomagalhaes/authorizator/types"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -106,6 +107,25 @@ func UpdateApplication(r repository.AppRepository) fiber.Handler {
 		}
 
 		return c.Status(http.StatusOK).JSON(SuccessResponse("ok"))
+	}
+}
+
+func GetAppRoles(ps *services.PermissionService) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+
+		id, err := GetIDFromRequest(c)
+
+		if err != nil {
+			c.Status(http.StatusBadRequest).JSON(ErrorResponse(err))
+		}
+
+		app, err := ps.GetAppWithRoles(id)
+
+		if err != nil {
+			c.Status(http.StatusNotFound).JSON(ErrorResponse(err))
+		}
+
+		return c.Status(http.StatusOK).JSON(SuccessResponse(app))
 	}
 }
 

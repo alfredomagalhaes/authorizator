@@ -63,3 +63,20 @@ func (pgr *PgRoleRepository) GetApp(id uuid.UUID) (types.Application, error) {
 
 	return appRepo.Get(id)
 }
+
+// Updates data from a role, this will override every field
+// from the struct in the database
+func (pgr *PgRoleRepository) Update(role types.Role) error {
+	return nil
+}
+
+// Return all the roles from a specific application
+func (pgr *PgRoleRepository) GetAppRoles(appId uuid.UUID) ([]types.Role, error) {
+
+	roles := []types.Role{}
+
+	result := pgr.DB.Where("app_id = ?", appId).Find(&roles)
+
+	return roles, result.Error
+
+}

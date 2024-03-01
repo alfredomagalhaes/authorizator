@@ -30,6 +30,8 @@ type RoleRepository interface {
 	Save(role types.Role) (uuid.UUID, error)
 	Get(uuid.UUID) (types.Role, error)
 	GetApp(uuid.UUID) (types.Application, error)
+	Update(role types.Role) error
+	GetAppRoles(appId uuid.UUID) ([]types.Role, error)
 }
 
 // Interface to control Applications interactions in the database

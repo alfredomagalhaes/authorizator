@@ -58,6 +58,8 @@ func (par PgAppRepository) Get(id uuid.UUID) (types.Application, error) {
 
 	result := par.DB.Where("id = ?", id).First(&appToRet)
 
+	//gorm.ErrRecordNotFound
+
 	return appToRet, result.Error
 }
 func (par PgAppRepository) GetFromCache(id uuid.UUID) (types.Application, error) {

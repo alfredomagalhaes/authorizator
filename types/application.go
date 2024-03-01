@@ -7,4 +7,5 @@ type Application struct {
 	Base
 	Name       string `json:"name"`
 	ExternalID string `json:"external_id" gorm:"unique"`
+	Roles      []Role `json:"roles,omitempty" gorm:"-"`
 }

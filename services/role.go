@@ -1,4 +1,4 @@
-package usecase
+package services
 
 import (
 	"errors"
@@ -57,4 +57,19 @@ func CreateRole(r repository.RoleRepository, role types.Role) (uuid.UUID, error)
 	}
 
 	return roleID, nil
+}
+
+func GetAppWithRoles(r repository.RoleRepository, appID uuid.UUID) (types.Application, error) {
+	var app types.Application
+	roles, err := r.GetAppRoles(appID)
+
+	if err != nil {
+		return app, err
+	}
+
+	//Verificar como localizar o registro do app
+
+	app.Roles = roles
+
+	return app, nil
 }

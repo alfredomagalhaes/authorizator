@@ -13,6 +13,7 @@ import (
 	"github.com/alfredomagalhaes/authorizator/infrastructure/db"
 	"github.com/alfredomagalhaes/authorizator/repository"
 	"github.com/alfredomagalhaes/authorizator/routes"
+	"github.com/alfredomagalhaes/authorizator/services"
 	"github.com/gofiber/contrib/fiberzerolog"
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
@@ -56,6 +57,9 @@ var initApiServerCmd = &cobra.Command{
 		appRepo, _ := repository.NewPgAppRepository(pgDB)
 		roleRepo, _ := repository.NewPgRoleRepository(pgDB)
 
+		//Initialize permission service
+		permService, _ := services.NewPermissionService(appRepo, roleRepo)
+
 		//Create all the tables in the database
 		appRepo.MigrateTable()
 
@@ -64,7 +68,7 @@ var initApiServerCmd = &cobra.Command{
 		apiV1 := app.Group("/api/v1")
 
 		//Initialize "applications" routes
-		routes.ApplicationRoute(apiV1, appRepo)
+		routes.ApplicationRoute(apiV1, appRepo, permService)
 		routes.RolesRoute(apiV1, roleRepo)
 
 		// Listen from a different goroutine
